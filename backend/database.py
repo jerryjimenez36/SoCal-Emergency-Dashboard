@@ -101,7 +101,24 @@ def upsert_source_incidents(source: str, incidents: list[dict]) -> None:
 def _rows(query: str, params: tuple = ()) -> list[dict]:
     with connect() as conn:
         rows = conn.execute(query, params).fetchall()
-    return [dict(row) | {"active": bool(row["active"]), "location_approximate": bool(row["location_approximate"])} for row in rows]
+
+    incidents = []
+
+    for row in rows:
+        incident = dict(row)
+
+        # raw_json is retained in SQLite for troubleshooting, but omitted
+        # from normal API responses to keep ESP32 payloads compact.
+        incident.pop("raw_json", None)
+
+        incident["active"] = bool(incident["active"])
+        incident["location_approximate"] = bool(
+            incident["location_approximate"]
+        )
+
+        incidents.append(incident)
+
+    return incidents
 
 
 def get_active_incidents() -> list[dict]:

@@ -46,10 +46,22 @@ def create_app() -> Flask:
     @app.get("/emergency")
     def emergency():
         incidents = get_active_incidents()
-        counts: dict[str, int] = {}
+        counts: dict[str, int] = {
+            "fire": 0,
+            "medical": 0,
+            "traffic": 0,
+            "hazmat": 0,
+            "law": 0,
+            "other": 0,
+        }
+
         for item in incidents:
             category = item.get("category") or "other"
-            counts[category] = counts.get(category, 0) + 1
+
+            if category not in counts:
+                category = "other"
+
+            counts[category] += 1
         return jsonify({
             "online": True,
             "updated": datetime.now(TZ).isoformat(),
