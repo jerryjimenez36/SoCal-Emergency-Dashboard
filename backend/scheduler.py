@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 
+from collectors.calfire import fetch as fetch_calfire
 from collectors.chp import fetch as fetch_chp
 from collectors.rvc_fire import fetch as fetch_rvc_fire
 from config import SETTINGS
@@ -50,9 +51,14 @@ def collect_chp() -> None:
     _collect("chp", fetch_chp)
 
 
+def collect_calfire() -> None:
+    _collect("calfire", fetch_calfire)
+
+
 def _loop() -> None:
     next_rvc = 0.0
     next_chp = 0.0
+    next_calfire = 0.0
     while not _STOP.is_set():
         now = time.monotonic()
         if now >= next_rvc:
@@ -68,6 +74,16 @@ def _loop() -> None:
             except Exception:
                 LOG.exception("CHP scheduled collection failed")
             next_chp = time.monotonic() + SETTINGS.chp_refresh_seconds
+
+        if now >= next_calfire:
+            try:
+                collect_calfire()
+            except Exception:
+                LOG.exception("CAL FIRE scheduled collection failed")
+            next_calfire = (
+                time.monotonic()
+                + SETTINGS.calfire_refresh_seconds
+            )
 
         _STOP.wait(1)
 

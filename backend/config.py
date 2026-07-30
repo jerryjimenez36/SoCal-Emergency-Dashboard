@@ -13,6 +13,7 @@ class Settings:
     radius_miles: float = 25.0
     api_port: int = 5053
     rvc_fire_refresh_seconds: int = 60
+    calfire_refresh_seconds: int = 300
     chp_refresh_seconds: int = 60
     database_path: Path = BASE_DIR / "data" / "incidents.db"
     geocode_cache_path: Path = BASE_DIR / "cache" / "geocode-cache.json"
