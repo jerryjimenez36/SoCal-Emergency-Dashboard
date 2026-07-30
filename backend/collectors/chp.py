@@ -23,6 +23,20 @@ HEADERS = {
 }
 GEOCODER = Nominatim(user_agent="socal-emergency-dashboard-chp-calimesa")
 
+# Approximate fallback coordinates used only when CHP freeway shorthand
+# cannot be resolved by the geocoder.
+AREA_FALLBACKS = {
+    "san gorgonio pass": (33.9256, -116.8753),
+    "beaumont": (33.9295, -116.9773),
+    "banning": (33.9256, -116.8764),
+    "riverside": (33.9533, -117.3962),
+    "riverside fsp": (33.9533, -117.3962),
+    "san bernardino": (34.1083, -117.2898),
+    "rancho cucamonga": (34.1064, -117.5931),
+    "indio chp": (33.7206, -116.2156),
+    "ic": (33.7206, -116.2156),
+}
+
 
 def _load_cache(path: Path) -> dict:
     try:
@@ -100,22 +114,59 @@ def _classify(call_type: str) -> tuple[str, str, str, int]:
     return call_type, "traffic", "information", 4
 
 
-def _geocode(location: str, location_desc: str, area: str, cache: dict) -> tuple[float | None, float | None, bool]:
+def _geocode(
+    location: str,
+    location_desc: str,
+    area: str,
+    cache: dict,
+) -> tuple[float | None, float | None, bool]:
     best_location = location_desc or location
     query = f"{_normalize_road_text(best_location)}, {area}, California, USA"
     key = f"chp::{query.lower()}"
-    if key in cache:
-        value = cache[key]
-        return value.get("latitude"), value.get("longitude"), True
 
-    location_result = GEOCODER.geocode(query, timeout=10, country_codes="us")
-    time.sleep(1.1)
+    cached = cache.get(key)
+
+    # Return a successful cached location immediately. Failed cached entries
+    # are retried through the fallback logic below.
+    if cached and cached.get("latitude") is not None:
+        return cached["latitude"], cached["longitude"], True
+
+    location_result = None
+
+    try:
+        location_result = GEOCODER.geocode(
+            query,
+            timeout=10,
+            country_codes="us",
+        )
+        time.sleep(1.1)
+    except Exception:
+        LOG.exception("CHP geocoding failed for %s", query)
+
+    if location_result:
+        latitude = float(location_result.latitude)
+        longitude = float(location_result.longitude)
+        method = "exact"
+    else:
+        fallback = AREA_FALLBACKS.get(area.strip().lower())
+
+        if fallback:
+            latitude, longitude = fallback
+            method = "area_fallback"
+        else:
+            latitude = None
+            longitude = None
+            method = "failed"
+
     cache[key] = {
-        "latitude": float(location_result.latitude) if location_result else None,
-        "longitude": float(location_result.longitude) if location_result else None,
+        "latitude": latitude,
+        "longitude": longitude,
+        "method": method,
     }
+
     _save_cache(SETTINGS.geocode_cache_path, cache)
-    return cache[key]["latitude"], cache[key]["longitude"], False
+
+    return latitude, longitude, False
 
 
 def _fetch_center(center_name: str, center_code: str, cache: dict) -> list[dict]:
