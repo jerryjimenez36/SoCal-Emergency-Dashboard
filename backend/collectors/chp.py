@@ -138,7 +138,12 @@ def _fetch_center(center_name: str, center_code: str, cache: dict) -> list[dict]
     incidents: list[dict] = []
     for row in table.find_all("tr"):
         cells = [" ".join(cell.get_text(" ", strip=True).split()) for cell in row.find_all(["td", "th"])]
-        if len(cells) < 7 or cells[0].lower() == "details":
+        if len(cells) < 7:
+            continue
+
+        # Every CHP incident row begins with "Details".
+        # Identify the header using the No. and Time columns instead.
+        if cells[1].lower() in {"no.", "no"} or cells[2].lower() == "time":
             continue
         _, number, incident_time, raw_type, location, location_desc, area = cells[:7]
         display_type, category, priority, rank = _classify(raw_type)
