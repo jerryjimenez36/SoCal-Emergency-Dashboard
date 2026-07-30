@@ -1,0 +1,8 @@
+backend/venv/
+backend/__pycache__/
+backend/collectors/__pycache__/
+backend/data/*.db
+backend/cache/*.json
+backend/logs/*.log
+.env
+.DS_Store

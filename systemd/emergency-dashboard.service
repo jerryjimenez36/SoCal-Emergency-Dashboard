@@ -1,0 +1,17 @@
+[Unit]
+Description=SoCal Emergency Dashboard Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi5
+Group=pi5
+WorkingDirectory=/opt/emergency-dashboard/backend
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/emergency-dashboard/backend/venv/bin/gunicorn --workers 1 --threads 4 --bind 0.0.0.0:5053 --timeout 45 app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
