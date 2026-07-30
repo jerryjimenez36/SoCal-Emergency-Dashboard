@@ -162,15 +162,62 @@ def _parse_feature(feature: dict) -> dict | None:
         )
     )
 
-    agency = str(
+    jurisdictional_agency = str(
         _first(
             attributes,
-            "POOResponsibleUnit",
-            "POOProtectingAgency",
-            "Source",
-            default="NIFC / IRWIN",
+            "POOJurisdictionalAgency",
+            default="",
         )
     ).strip()
+
+    protecting_agency = str(
+        _first(
+            attributes,
+            "POOProtectingAgency",
+            default="",
+        )
+    ).strip()
+
+    jurisdictional_unit = str(
+        _first(
+            attributes,
+            "POOJurisdictionalUnit",
+            "POOJurisdictionalUnitParentUnit",
+            default="",
+        )
+    ).strip()
+
+    agency_values = " ".join(
+        [
+            jurisdictional_agency,
+            protecting_agency,
+            jurisdictional_unit,
+        ]
+    ).upper()
+
+    is_usfs = (
+        "USFS" in agency_values
+        or "FOREST SERVICE" in agency_values
+        or jurisdictional_agency.upper() == "FS"
+        or protecting_agency.upper() == "FS"
+        or bool(attributes.get("IsFSAssisted"))
+    )
+
+    if is_usfs:
+        agency = "USFS"
+
+        if jurisdictional_unit:
+            agency = f"USFS - {jurisdictional_unit}"
+    else:
+        agency = str(
+            _first(
+                attributes,
+                "POOProtectingAgency",
+                "POOJurisdictionalAgency",
+                "Source",
+                default="NIFC / IRWIN",
+            )
+        ).strip()
 
     location = str(
         _first(
@@ -223,6 +270,10 @@ def _parse_feature(feature: dict) -> dict | None:
         "county": county,
         "acres": acres,
         "containment_percent": containment,
+        "jurisdictional_agency": jurisdictional_agency or None,
+        "protecting_agency": protecting_agency or None,
+        "jurisdictional_unit": jurisdictional_unit or None,
+        "usfs_incident": is_usfs,
     }
 
 
