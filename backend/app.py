@@ -31,14 +31,14 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return jsonify({"service": "SoCal Emergency Dashboard", "version": "0.2.0", "status": "online"})
+        return jsonify({"service": "SoCal Emergency Dashboard", "version": "0.3.0", "status": "online"})
 
     @app.get("/health")
     def health():
         return jsonify({
             "backend": "online",
             "database": "online",
-            "version": "0.2.0",
+            "version": "0.3.0",
             "time": datetime.now(TZ).isoformat(),
             "collectors": get_sources(),
         })

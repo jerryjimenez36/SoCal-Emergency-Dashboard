@@ -7,7 +7,22 @@ from zoneinfo import ZoneInfo
 TZ = ZoneInfo("America/Los_Angeles")
 _LOCK = threading.Lock()
 _STATE = {
-    "rvc_fire": {"online": False, "last_attempt": None, "last_success": None, "downloaded_count": 0, "within_radius": 0, "error": "not started"}
+    "rvc_fire": {
+        "online": False,
+        "last_attempt": None,
+        "last_success": None,
+        "downloaded_count": 0,
+        "within_radius": 0,
+        "error": "not started",
+    },
+    "chp": {
+        "online": False,
+        "last_attempt": None,
+        "last_success": None,
+        "downloaded_count": 0,
+        "within_radius": 0,
+        "error": "not started",
+    },
 }
 
 

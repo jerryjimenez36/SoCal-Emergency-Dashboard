@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 
+from collectors.chp import fetch as fetch_chp
 from collectors.rvc_fire import fetch as fetch_rvc_fire
 from config import SETTINGS
 from database import upsert_source_incidents
@@ -15,9 +16,9 @@ _STOP = threading.Event()
 _THREAD: threading.Thread | None = None
 
 
-def collect_rvc_fire() -> None:
+def _collect(source: str, fetcher) -> None:
     attempted = now_iso()
-    result = fetch_rvc_fire()
+    result = fetcher()
     filtered = []
     for incident in result["incidents"]:
         item = enrich_and_filter(
@@ -29,9 +30,9 @@ def collect_rvc_fire() -> None:
         if item is not None:
             filtered.append(item)
     if result["online"]:
-        upsert_source_incidents("rvc_fire", filtered)
+        upsert_source_incidents(source, filtered)
     set_source(
-        "rvc_fire",
+        source,
         online=result["online"],
         last_attempt=attempted,
         last_success=now_iso() if result["online"] else None,
@@ -41,13 +42,34 @@ def collect_rvc_fire() -> None:
     )
 
 
+def collect_rvc_fire() -> None:
+    _collect("rvc_fire", fetch_rvc_fire)
+
+
+def collect_chp() -> None:
+    _collect("chp", fetch_chp)
+
+
 def _loop() -> None:
+    next_rvc = 0.0
+    next_chp = 0.0
     while not _STOP.is_set():
-        try:
-            collect_rvc_fire()
-        except Exception:
-            LOG.exception("Scheduled collection failed")
-        _STOP.wait(SETTINGS.rvc_fire_refresh_seconds)
+        now = time.monotonic()
+        if now >= next_rvc:
+            try:
+                collect_rvc_fire()
+            except Exception:
+                LOG.exception("RVC Fire scheduled collection failed")
+            next_rvc = time.monotonic() + SETTINGS.rvc_fire_refresh_seconds
+
+        if now >= next_chp:
+            try:
+                collect_chp()
+            except Exception:
+                LOG.exception("CHP scheduled collection failed")
+            next_chp = time.monotonic() + SETTINGS.chp_refresh_seconds
+
+        _STOP.wait(1)
 
 
 def start_scheduler() -> None:

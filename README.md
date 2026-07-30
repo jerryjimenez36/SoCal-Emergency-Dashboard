@@ -1,28 +1,40 @@
 # SoCal Emergency Dashboard
 
-Raspberry Pi backend and ESP32 firmware for a 25-mile emergency incident dashboard centered near Calimesa, California.
+Raspberry Pi backend and ESP32 display project for nearby public-safety incidents around Calimesa, California.
 
-## Version 0.2
+## Version 0.3.0
 
-- Flask REST API on port 5053
-- SQLite incident history
-- Riverside County Fire collector
-- Geofence distance and bearing calculations
-- Background collector scheduler
-- Health, active incident, and history endpoints
-- systemd service
+Current live sources:
 
-## Endpoints
+- Riverside County Fire
+- California Highway Patrol Inland Communications Center
+- California Highway Patrol Indio Communications Center
 
-- `/health`
-- `/emergency`
-- `/history?limit=50`
+The backend filters geocoded incidents to a configurable 25-mile radius and exposes JSON endpoints for the ESP32 display.
+
+## API
+
+- `GET /health`
+- `GET /emergency`
+- `GET /history?limit=10`
+
+Default local URL: `http://<PI-IP>:5053`
 
 ## Install on Raspberry Pi
 
 ```bash
-cd /opt
-sudo git clone https://github.com/jerryjimenez36/SoCal-Emergency-Dashboard.git emergency-dashboard
 cd /opt/emergency-dashboard
 sudo bash scripts/install.sh
 ```
+
+## Update after pushing to GitHub
+
+```bash
+cd /opt/emergency-dashboard
+git pull
+sudo systemctl restart emergency-dashboard
+```
+
+## Notes
+
+Public incident locations can be approximate. This project is for situational awareness and is not a replacement for 911, Wireless Emergency Alerts, or official evacuation information.
